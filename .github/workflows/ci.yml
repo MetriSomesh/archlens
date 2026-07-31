@@ -12,7 +12,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ["20.x", "22.x"]
+        # pnpm 11 requires Node 22+ (uses node:sqlite for its store).
+        node: ["22.x", "24.x"]
     steps:
       - uses: actions/checkout@v4
 
@@ -30,10 +31,8 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      # Run tests with an explicit file list so it works on Node 20 too
-      # (positional glob support in `node --test` requires Node >= 21).
       - name: Test
-        run: node --test $(find dist -name '*.test.js')
+        run: node --test "dist/**/*.test.js"
 
       - name: Render the example (smoke)
         run: node dist/cli.js render examples/commute-plus.json --out .archlens --svg --mermaid
