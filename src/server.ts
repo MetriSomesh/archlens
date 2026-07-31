@@ -18,6 +18,7 @@ const CONTENT_TYPES: Record<string, string> = {
   ".js": "text/javascript; charset=utf-8",
   ".png": "image/png",
   ".txt": "text/plain; charset=utf-8",
+  ".mmd": "text/plain; charset=utf-8",
 };
 
 export interface ServerHandle {

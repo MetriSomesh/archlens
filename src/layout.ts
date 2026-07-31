@@ -127,11 +127,16 @@ export async function layoutSpec(spec: NormalizedSpec): Promise<Layout> {
     if (container.children && container.children.length > 0) rootChildren.push(container);
   }
 
-  const edges: ElkEdge[] = spec.edges.map((e, i) => ({
-    id: `e${i}`,
-    sources: [e.from],
-    targets: [e.to],
-  }));
+  // Only hand ELK edges whose endpoints both exist; a dangling reference makes
+  // ELK throw and would crash the whole render. Such edges are reported as
+  // warnings by validateSpec and are simply left unrouted here.
+  const edges: ElkEdge[] = [];
+  for (let i = 0; i < spec.edges.length; i++) {
+    const e = spec.edges[i];
+    if (nodeById.has(e.from) && nodeById.has(e.to)) {
+      edges.push({ id: `e${i}`, sources: [e.from], targets: [e.to] });
+    }
+  }
 
   const graph: ElkNode & { edges: ElkEdge[] } = {
     id: "root",

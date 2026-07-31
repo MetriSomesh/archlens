@@ -114,6 +114,14 @@ function collectWarnings(spec: NormalizedSpec): string[] {
     }
   }
 
+  for (const f of spec.flows) {
+    for (const step of f.steps) {
+      if (!ids.has(step)) {
+        warnings.push(`flow '${f.name}' references unknown node '${step}'`);
+      }
+    }
+  }
+
   const connected = new Set<string>();
   for (const e of spec.edges) {
     connected.add(e.from);

@@ -126,3 +126,33 @@ test("workspace exports mermaid to a .mmd file", async () => {
   assert.match(mmd, /^flowchart TD/);
   await ws.close();
 });
+
+test("layout does not crash on a dangling edge; it renders valid content and warns", async () => {
+  const { html, warnings } = await renderSpecToHtml({
+    meta: { title: "Resilient" },
+    nodes: [
+      { id: "a", label: "A" },
+      { id: "b", label: "B" },
+    ],
+    edges: [
+      { from: "a", to: "b", label: "ok" },
+      { from: "a", to: "ghost" },
+    ],
+  });
+  assert.match(html, /<!doctype html>/i);
+  assert.ok(warnings.some((w) => w.includes("unknown node 'ghost'")));
+  // the valid edge is still drawn
+  assert.match(html, /data-from="a" data-to="b"/);
+});
+
+test("validateSpec warns when a flow references an unknown node", () => {
+  const { warnings } = validateSpec({
+    nodes: [
+      { id: "a", label: "A" },
+      { id: "b", label: "B" },
+    ],
+    edges: [{ from: "a", to: "b" }],
+    flows: [{ name: "Broken", steps: ["a", "missing"] }],
+  });
+  assert.ok(warnings.some((w) => w === "flow 'Broken' references unknown node 'missing'"));
+});
