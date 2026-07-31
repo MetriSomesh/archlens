@@ -48,7 +48,7 @@ MCP config:
 ```json
 {
   "mcpServers": {
-    "archlens": { "command": "npx", "args": ["-y", "archlens", "mcp"] }
+    "archlens": { "command": "npx", "args": ["-y", "@metrisomesh/archlens", "mcp"] }
   }
 }
 ```
@@ -56,8 +56,8 @@ MCP config:
 ### CLI
 
 ```bash
-npx archlens serve ./architecture.json   # clickable link + live reload
-npx archlens render ./architecture.json  # one-shot self-contained .html
+npx @metrisomesh/archlens serve ./architecture.json   # clickable link + live reload
+npx @metrisomesh/archlens render ./architecture.json  # one-shot self-contained .html
 ```
 
 ## Authoring a good spec

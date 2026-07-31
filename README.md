@@ -55,7 +55,7 @@ directly. Point your MCP client at the `archlens mcp` command:
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "archlens", "mcp"]
+      "args": ["-y", "@metrisomesh/archlens", "mcp"]
     }
   }
 }

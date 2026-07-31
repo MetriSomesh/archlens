@@ -1,5 +1,5 @@
 {
-  "name": "archlens",
+  "name": "@metrisomesh/archlens",
   "version": "0.1.0",
   "description": "Turn an AI coding agent's architecture description into a beautiful, interactive, taste-driven diagram. No API key of its own.",
   "type": "module",
@@ -27,6 +27,8 @@
   },
   "files": [
     "dist",
+    "!dist/**/*.test.js",
+    "!dist/**/*.test.d.ts",
     "skill",
     "README.md"
   ],
@@ -35,7 +37,7 @@
     "typecheck": "tsc --noEmit",
     "test": "tsc && node --test \"dist/**/*.test.js\"",
     "start": "node dist/cli.js",
-    "prepublishOnly": "pnpm run build"
+    "prepublishOnly": "tsc"
   },
   "packageManager": "pnpm@11.18.0",
   "publishConfig": {
