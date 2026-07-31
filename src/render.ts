@@ -84,7 +84,7 @@ function renderDiagramSvg(layout: Layout, spec: NormalizedSpec): string {
       const label = e.label
         ? `<text class="edge-label" x="${mid.x}" y="${mid.y - 5}" text-anchor="middle">${esc(e.label)}</text>`
         : "";
-      return `<g class="edge-g" data-edge="${i}"><polyline class="${cls}" points="${pts}" marker-end="url(#al-arrow)"/>${label}</g>`;
+      return `<g class="edge-g" data-edge="${i}" data-from="${esc(e.from)}" data-to="${esc(e.to)}"><polyline class="${cls}" points="${pts}" marker-end="url(#al-arrow)"/>${label}</g>`;
     })
     .join("\n");
 
@@ -168,7 +168,20 @@ main.al-main { position: relative; flex: 1; overflow: hidden; }
 .edge-dashed { stroke-dasharray: 6 5; }
 .edge-label { fill: var(--text-dim); font-size: 11px; paint-order: stroke; stroke: var(--edge-label-bg); stroke-width: 3px; }
 .al-arrow path { fill: var(--edge); }
-.node.dim, .edge-g.dim { opacity: 0.25; }
+.node.dim, .edge-g.dim { opacity: 0.18; }
+.edge-g.flow-active .edge { stroke: var(--accent); stroke-width: 2.6px; }
+.node.flow-node .node-box { stroke: var(--accent); stroke-width: 2px; }
+.flow-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5px; }
+.flow-dot.pulse { animation: al-pulse 1.4s ease-in-out infinite; }
+@keyframes al-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+.al-flow { display: inline-flex; align-items: center; gap: 8px; }
+select.al-select {
+  appearance: none; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); border-radius: var(--radius-sm); height: 34px; padding: 0 10px;
+  font-family: var(--font); font-size: 13px; cursor: pointer;
+}
+select.al-select:hover { border-color: var(--border-strong); }
 
 aside.al-detail {
   position: absolute; top: 12px; right: 12px; width: 280px; max-width: calc(100% - 24px);
@@ -193,6 +206,9 @@ details.al-outline pre { font-family: var(--mono); font-size: 12px; color: var(-
 
 @media (prefers-reduced-motion: no-preference) {
   .al-btn, .node-box, .edge-g, .node { transition: opacity 0.2s ease, stroke 0.15s ease, transform 0.05s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-dot.pulse { animation: none; }
 }
 `.trim();
 }
@@ -298,6 +314,88 @@ function viewerScript(): string {
     tbtn.textContent = next === "dark" ? "Light" : "Dark";
   });
 
+  // ---- flow animation ----
+  var geo = (function(){ var el = document.getElementById("arch-geo"); return el ? JSON.parse(el.textContent) : { nodes:{}, edges:[], flows:[] }; })();
+  var edgeMap = {}; geo.edges.forEach(function(e){ edgeMap[e.from + ">" + e.to] = e.points; });
+  var flowSel = document.getElementById("al-flow");
+  var playBtn = document.getElementById("al-play");
+  var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var anim = null, dot = null;
+
+  function clearFlow() {
+    if (anim) { cancelAnimationFrame(anim); anim = null; }
+    if (dot) { dot.remove(); dot = null; }
+    svg.querySelectorAll(".edge-g").forEach(function(g){ g.classList.remove("flow-active","dim"); });
+    svg.querySelectorAll(".node").forEach(function(g){ g.classList.remove("flow-node","dim"); });
+  }
+  function flowPath(flow) {
+    var pts = [];
+    function push(p){ if(pts.length){ var l=pts[pts.length-1]; if(l[0]===p[0]&&l[1]===p[1]) return; } pts.push(p); }
+    for (var i=0;i<flow.steps.length-1;i++){
+      var a=flow.steps[i], b=flow.steps[i+1];
+      var seg=edgeMap[a+">"+b], rev=false;
+      if(!seg){ seg=edgeMap[b+">"+a]; rev=!!seg; }
+      if(seg){ var s=seg.slice(); if(rev) s=s.slice().reverse(); s.forEach(push); }
+      else { var na=geo.nodes[a], nb=geo.nodes[b]; if(na) push([na.cx,na.cy]); if(nb) push([nb.cx,nb.cy]); }
+    }
+    return pts;
+  }
+  function highlightFlow(flow) {
+    var edgeSet={}, nodeSet={};
+    for(var i=0;i<flow.steps.length-1;i++){ var a=flow.steps[i],b=flow.steps[i+1]; edgeSet[a+">"+b]=1; edgeSet[b+">"+a]=1; }
+    flow.steps.forEach(function(s){ nodeSet[s]=1; });
+    svg.querySelectorAll(".edge-g").forEach(function(g){
+      var key=g.getAttribute("data-from")+">"+g.getAttribute("data-to");
+      if(edgeSet[key]){ g.classList.add("flow-active"); g.classList.remove("dim"); }
+      else { g.classList.add("dim"); g.classList.remove("flow-active"); }
+    });
+    svg.querySelectorAll(".node").forEach(function(g){
+      if(nodeSet[g.getAttribute("data-id")]){ g.classList.add("flow-node"); g.classList.remove("dim"); }
+      else { g.classList.add("dim"); g.classList.remove("flow-node"); }
+    });
+  }
+  function animateFlow(flow) {
+    var pts=flowPath(flow); if(pts.length<2) return;
+    var seglen=[], total=0;
+    for(var i=1;i<pts.length;i++){ var dx=pts[i][0]-pts[i-1][0], dy=pts[i][1]-pts[i-1][1]; var d=Math.sqrt(dx*dx+dy*dy); seglen.push(d); total+=d; }
+    dot=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    dot.setAttribute("class","flow-dot"+(reduce?" pulse":"")); dot.setAttribute("r","6");
+    vp.appendChild(dot);
+    function at(dist){ if(dist<=0) return pts[0]; var acc=0; for(var i=0;i<seglen.length;i++){ if(acc+seglen[i]>=dist){ var t=(dist-acc)/(seglen[i]||1); return [pts[i][0]+(pts[i+1][0]-pts[i][0])*t, pts[i][1]+(pts[i+1][1]-pts[i][1])*t]; } acc+=seglen[i]; } return pts[pts.length-1]; }
+    if(reduce){ var mid=at(total/2); dot.setAttribute("cx",mid[0]); dot.setAttribute("cy",mid[1]); return; }
+    var dur=Math.max(1400,total*3), start=null;
+    function frame(ts){ if(start===null)start=ts; var el=(ts-start)%dur; var p=at((el/dur)*total); dot.setAttribute("cx",p[0]); dot.setAttribute("cy",p[1]); anim=requestAnimationFrame(frame); }
+    anim=requestAnimationFrame(frame);
+  }
+  function playFlow(idx){ clearFlow(); var flow=geo.flows[idx]; if(!flow) return; highlightFlow(flow); animateFlow(flow); }
+  if (flowSel) {
+    flowSel.addEventListener("change", function(){ var v=flowSel.value; if(v==="") clearFlow(); else playFlow(parseInt(v,10)); });
+    playBtn.addEventListener("click", function(){ var v=flowSel.value; if(v===""&&geo.flows.length){ flowSel.value="0"; v="0"; } if(v!=="") playFlow(parseInt(v,10)); });
+  }
+
+  // ---- PNG export (client-side, self-contained) ----
+  var pngBtn=document.getElementById("al-png");
+  if(pngBtn) pngBtn.addEventListener("click", exportPng);
+  function exportPng(){
+    var vb=svg.viewBox.baseVal;
+    var clone=svg.cloneNode(true);
+    clone.setAttribute("width",vb.width); clone.setAttribute("height",vb.height); clone.removeAttribute("style");
+    var vpc=clone.querySelector("#al-viewport"); if(vpc) vpc.setAttribute("transform","translate(12,12)");
+    var srcAll=svg.querySelectorAll("*"), dstAll=clone.querySelectorAll("*");
+    var props=["fill","stroke","stroke-width","stroke-dasharray","stroke-linecap","stroke-linejoin","font-size","font-weight","font-family","color","opacity","text-anchor"];
+    for(var i=0;i<srcAll.length;i++){ var cs=getComputedStyle(srcAll[i]); var s=""; for(var j=0;j<props.length;j++){ var v=cs.getPropertyValue(props[j]); if(v) s+=props[j]+":"+v+";"; } dstAll[i].setAttribute("style",s); }
+    var bg=getComputedStyle(document.body).backgroundColor||"#ffffff";
+    var rect=document.createElementNS("http://www.w3.org/2000/svg","rect");
+    rect.setAttribute("x","0"); rect.setAttribute("y","0"); rect.setAttribute("width",vb.width); rect.setAttribute("height",vb.height); rect.setAttribute("fill",bg);
+    clone.insertBefore(rect,clone.firstChild);
+    var xml=new XMLSerializer().serializeToString(clone);
+    var url=URL.createObjectURL(new Blob([xml],{type:"image/svg+xml;charset=utf-8"}));
+    var img=new Image();
+    img.onload=function(){ var scale=2, canvas=document.createElement("canvas"); canvas.width=vb.width*scale; canvas.height=vb.height*scale; var ctx=canvas.getContext("2d"); ctx.scale(scale,scale); ctx.drawImage(img,0,0); URL.revokeObjectURL(url); canvas.toBlob(function(blob){ if(!blob) return; var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=(document.title||"diagram").replace(/[^a-z0-9]+/gi,"-").replace(/^-+|-+$/g,"").toLowerCase()+".png"; a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); },1000); }); };
+    img.onerror=function(){ URL.revokeObjectURL(url); };
+    img.src=url;
+  }
+
   window.addEventListener("resize", fit);
   fit();
 })();
@@ -338,6 +436,32 @@ export function renderHtml(
     ? `<script>(function(){try{var es=new EventSource("/__reload");es.onmessage=function(){location.reload();};}catch(e){}})();</script>`
     : "";
 
+  // Geometry the viewer needs to animate flows (node centers + edge polylines).
+  const geo = {
+    nodes: Object.fromEntries(
+      layout.nodes.map((n) => [n.id, { cx: n.x + n.width / 2, cy: n.y + n.height / 2 }])
+    ),
+    edges: layout.edges.map((e) => ({
+      from: e.from,
+      to: e.to,
+      points: e.points.map((p) => [Math.round(p.x), Math.round(p.y)]),
+    })),
+    flows: spec.flows.map((f) => ({ name: f.name, steps: f.steps })),
+  };
+  const geoJson = JSON.stringify(geo).replace(/<\//g, "<\\/");
+
+  const flowControls =
+    spec.flows.length > 0
+      ? `<span class="al-flow">
+      <label class="al-title" for="al-flow" style="font-weight:500">Flow</label>
+      <select class="al-select" id="al-flow" aria-label="Select a flow to animate">
+        <option value="">None</option>
+        ${spec.flows.map((f, i) => `<option value="${i}">${esc(f.name)}</option>`).join("")}
+      </select>
+      <button class="al-btn" id="al-play" aria-label="Play flow">Play</button>
+    </span>`
+      : "";
+
   const html = `<!doctype html>
 <html lang="en"${initialTheme ? ` data-theme="${initialTheme}"` : ""}>
 <head>
@@ -354,9 +478,11 @@ ${componentCss()}
   <header class="al-bar">
     <span class="al-title">${title}</span>
     <span class="al-spacer"></span>
+    ${flowControls}
     <button class="al-btn" id="al-zout" aria-label="Zoom out">-</button>
     <button class="al-btn" id="al-reset" aria-label="Fit to view">Fit</button>
     <button class="al-btn" id="al-zin" aria-label="Zoom in">+</button>
+    <button class="al-btn" id="al-png" aria-label="Download PNG">PNG</button>
     <button class="al-btn" id="al-theme" aria-label="Toggle theme">Theme</button>
   </header>
   <main class="al-main">
@@ -370,6 +496,7 @@ ${componentCss()}
   </details>
 </div>
 <script id="arch-spec" type="application/json">${specJson}</script>
+<script id="arch-geo" type="application/json">${geoJson}</script>
 <script>
 ${viewerScript()}
 </script>

@@ -124,7 +124,64 @@ function collectWarnings(spec: NormalizedSpec): string[] {
     if (!connected.has(n.id)) warnings.push(`node '${n.id}' has no edges or flows (orphan)`);
   }
 
+  for (const cycle of detectCycles(spec)) {
+    warnings.push(`cycle detected: ${cycle.join(" -> ")}`);
+  }
+
   return warnings;
+}
+
+/**
+ * Find directed cycles among the edges. Returns each cycle as a list of node ids
+ * that starts and ends on the same id (e.g. ['a','b','a']). Self-loops count.
+ * Cycles are de-duplicated by their normalized rotation so each is reported once.
+ */
+export function detectCycles(spec: NormalizedSpec): string[][] {
+  const ids = new Set(spec.nodes.map((n) => n.id));
+  const adj = new Map<string, string[]>();
+  for (const id of ids) adj.set(id, []);
+  for (const e of spec.edges) {
+    if (ids.has(e.from) && ids.has(e.to)) adj.get(e.from)!.push(e.to);
+  }
+
+  const WHITE = 0,
+    GRAY = 1,
+    BLACK = 2;
+  const color = new Map<string, number>();
+  for (const id of ids) color.set(id, WHITE);
+  const stack: string[] = [];
+  const found: string[][] = [];
+  const seen = new Set<string>();
+
+  const record = (cycle: string[]) => {
+    // Normalize rotation (start at the lexicographically smallest id) for dedup.
+    const core = cycle.slice(0, -1);
+    let min = 0;
+    for (let i = 1; i < core.length; i++) if (core[i] < core[min]) min = i;
+    const rotated = core.slice(min).concat(core.slice(0, min));
+    const key = rotated.join(">");
+    if (seen.has(key)) return;
+    seen.add(key);
+    found.push([...rotated, rotated[0]]);
+  };
+
+  const dfs = (u: string) => {
+    color.set(u, GRAY);
+    stack.push(u);
+    for (const v of adj.get(u) ?? []) {
+      if (color.get(v) === GRAY) {
+        const idx = stack.indexOf(v);
+        record([...stack.slice(idx), v]);
+      } else if (color.get(v) === WHITE) {
+        dfs(v);
+      }
+    }
+    stack.pop();
+    color.set(u, BLACK);
+  };
+
+  for (const id of ids) if (color.get(id) === WHITE) dfs(id);
+  return found;
 }
 
 /**

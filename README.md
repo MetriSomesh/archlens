@@ -23,7 +23,7 @@ Under active construction. Built in phases:
 - [x] Phase 0 — spec schema + ELK layout + static render
 - [x] Phase 1 — interactive HTML renderer + taste
 - [x] Phase 2 — MCP server + local server with live reload
-- [ ] Phase 3 — flow animation + exports (SVG / PNG / Mermaid)
+- [x] Phase 3 — flow animation + exports (SVG / PNG / Mermaid) + cycle warnings
 - [ ] Phase 4 — skill packaging + docs + CI
 
 ## Usage
@@ -66,10 +66,22 @@ It exposes three tools:
 - `render_architecture` — render/replace the diagram from a full spec.
 - `update_architecture` — patch the current diagram incrementally
   (add/update/remove nodes, edges, groups, flows) with a live hot-reload.
-- `export_diagram` — save the current diagram as `html`, `svg`, or `json`.
+- `export_diagram` — save the current diagram as `html`, `svg`, `mermaid`, or `json`.
 
 Every tool call returns a clickable localhost URL plus a plain-text outline of
 the diagram, so the agent always keeps full context of what it drew.
+
+## Interactive diagram
+
+The generated HTML is self-contained and offline-friendly. In the browser you get:
+
+- **Pan / zoom / fit**, click a component for its details and connections.
+- **Flow animation** — pick a named flow to trace a request path; a marker travels
+  the route while off-path nodes dim. Respects `prefers-reduced-motion`.
+- **Light / dark** toggle and a **PNG** download button (client-side, no server).
+- An accessible **text outline** fallback for no-JS / screen readers.
+
+Cycles and orphan components are surfaced as warnings on every render.
 
 ## License
 

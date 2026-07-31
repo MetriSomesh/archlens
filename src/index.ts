@@ -3,6 +3,7 @@ export * from "./layout.js";
 export * from "./render.js";
 export * from "./outline.js";
 export * from "./lint.js";
+export * from "./mermaid.js";
 export * from "./server.js";
 export * from "./workspace.js";
 export { createMcpServer, runMcpServer, formatRenderResult } from "./mcp.js";

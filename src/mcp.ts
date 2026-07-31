@@ -148,9 +148,10 @@ export function createMcpServer(opts: McpServerOptions = {}) {
       title: "Export diagram to a file",
       description:
         "Export the current diagram to a static file: 'html' (self-contained interactive), " +
-        "'svg' (vector), or 'json' (the normalized spec).",
+        "'svg' (vector), 'mermaid' (a .mmd flowchart), or 'json' (the normalized spec). " +
+        "PNG export is available from the toolbar of the interactive HTML page.",
       inputSchema: {
-        format: z.enum(["html", "svg", "json"]).describe("Output format."),
+        format: z.enum(["html", "svg", "mermaid", "json"]).describe("Output format."),
         path: z.string().optional().describe("Optional output path. Defaults into .archlens/."),
       },
     },

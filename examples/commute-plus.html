@@ -82,7 +82,20 @@ main.al-main { position: relative; flex: 1; overflow: hidden; }
 .edge-dashed { stroke-dasharray: 6 5; }
 .edge-label { fill: var(--text-dim); font-size: 11px; paint-order: stroke; stroke: var(--edge-label-bg); stroke-width: 3px; }
 .al-arrow path { fill: var(--edge); }
-.node.dim, .edge-g.dim { opacity: 0.25; }
+.node.dim, .edge-g.dim { opacity: 0.18; }
+.edge-g.flow-active .edge { stroke: var(--accent); stroke-width: 2.6px; }
+.node.flow-node .node-box { stroke: var(--accent); stroke-width: 2px; }
+.flow-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5px; }
+.flow-dot.pulse { animation: al-pulse 1.4s ease-in-out infinite; }
+@keyframes al-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+.al-flow { display: inline-flex; align-items: center; gap: 8px; }
+select.al-select {
+  appearance: none; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); border-radius: var(--radius-sm); height: 34px; padding: 0 10px;
+  font-family: var(--font); font-size: 13px; cursor: pointer;
+}
+select.al-select:hover { border-color: var(--border-strong); }
 
 aside.al-detail {
   position: absolute; top: 12px; right: 12px; width: 280px; max-width: calc(100% - 24px);
@@ -108,6 +121,9 @@ details.al-outline pre { font-family: var(--mono); font-size: 12px; color: var(-
 @media (prefers-reduced-motion: no-preference) {
   .al-btn, .node-box, .edge-g, .node { transition: opacity 0.2s ease, stroke 0.15s ease, transform 0.05s ease; }
 }
+@media (prefers-reduced-motion: reduce) {
+  .flow-dot.pulse { animation: none; }
+}
 </style>
 </head>
 <body>
@@ -115,9 +131,18 @@ details.al-outline pre { font-family: var(--mono); font-size: 12px; color: var(-
   <header class="al-bar">
     <span class="al-title">Commute+</span>
     <span class="al-spacer"></span>
+    <span class="al-flow">
+      <label class="al-title" for="al-flow" style="font-weight:500">Flow</label>
+      <select class="al-select" id="al-flow" aria-label="Select a flow to animate">
+        <option value="">None</option>
+        <option value="0">Plan a trip</option>
+      </select>
+      <button class="al-btn" id="al-play" aria-label="Play flow">Play</button>
+    </span>
     <button class="al-btn" id="al-zout" aria-label="Zoom out">-</button>
     <button class="al-btn" id="al-reset" aria-label="Fit to view">Fit</button>
     <button class="al-btn" id="al-zin" aria-label="Zoom in">+</button>
+    <button class="al-btn" id="al-png" aria-label="Download PNG">PNG</button>
     <button class="al-btn" id="al-theme" aria-label="Toggle theme">Theme</button>
   </header>
   <main class="al-main">
@@ -132,15 +157,15 @@ details.al-outline pre { font-family: var(--mono); font-size: 12px; color: var(-
 <g class="group"><rect class="group-box" x="135.83333333333334" y="360" width="227.5" height="196" rx="14"/><text class="group-label" x="151.83333333333334" y="382">Backend (Ktor)</text></g>
 <g class="group"><rect class="group-box" x="61.83333333333334" y="630" width="405" height="110" rx="14"/><text class="group-label" x="77.83333333333334" y="652">Routing</text></g>
 <g class="group"><rect class="group-box" x="24" y="814" width="434" height="110" rx="14"/><text class="group-label" x="40" y="836">Data</text></g>
-<g class="edge-g" data-edge="0"><polyline class="edge" points="95,90 95,110" marker-end="url(#al-arrow)"/></g>
-<g class="edge-g" data-edge="1"><polyline class="edge" points="95,166 95,186" marker-end="url(#al-arrow)"/></g>
-<g class="edge-g" data-edge="2"><polyline class="edge" points="230.83333333333334,266 230.83333333333334,394" marker-end="url(#al-arrow)"/><text class="edge-label" x="230.83333333333334" y="389" text-anchor="middle">HTTPS</text></g>
-<g class="edge-g" data-edge="3"><polyline class="edge" points="193.33333333333334,450 193.33333333333334,460 171.33333333333334,460 171.33333333333334,664" marker-end="url(#al-arrow)"/><text class="edge-label" x="171.33333333333334" y="455" text-anchor="middle">GraphQL</text></g>
-<g class="edge-g" data-edge="4"><polyline class="edge" points="230.83333333333334,450 230.83333333333334,470 182.33333333333334,470 182.33333333333334,571 371.83333333333337,571 371.83333333333337,664" marker-end="url(#al-arrow)"/></g>
-<g class="edge-g" data-edge="5"><polyline class="edge" points="132.5,90 132.5,120" marker-end="url(#al-arrow)"/></g>
-<g class="edge-g" data-edge="6"><polyline class="edge" points="141.5,720 141.5,848" marker-end="url(#al-arrow)"/></g>
-<g class="edge-g" data-edge="7"><polyline class="edge" points="201.16666666666669,720 201.16666666666666,755 329.3333333333333,755 329.3333333333333,848" marker-end="url(#al-arrow)"/></g>
-<g class="edge-g" data-edge="8"><polyline class="edge" points="371.83333333333337,720 371.83333333333337,755 383.66666666666674,755 383.66666666666674,848" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="0" data-from="ui" data-to="vm"><polyline class="edge" points="95,90 95,110" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="1" data-from="vm" data-to="repo"><polyline class="edge" points="95,166 95,186" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="2" data-from="repo" data-to="api"><polyline class="edge" points="230.83333333333334,266 230.83333333333334,394" marker-end="url(#al-arrow)"/><text class="edge-label" x="230.83333333333334" y="389" text-anchor="middle">HTTPS</text></g>
+<g class="edge-g" data-edge="3" data-from="api" data-to="otp"><polyline class="edge" points="193.33333333333334,450 193.33333333333334,460 171.33333333333334,460 171.33333333333334,664" marker-end="url(#al-arrow)"/><text class="edge-label" x="171.33333333333334" y="455" text-anchor="middle">GraphQL</text></g>
+<g class="edge-g" data-edge="4" data-from="api" data-to="gh"><polyline class="edge" points="230.83333333333334,450 230.83333333333334,470 182.33333333333334,470 182.33333333333334,571 371.83333333333337,571 371.83333333333337,664" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="5" data-from="api" data-to="fare"><polyline class="edge" points="132.5,90 132.5,120" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="6" data-from="otp" data-to="gtfs"><polyline class="edge" points="141.5,720 141.5,848" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="7" data-from="otp" data-to="osm"><polyline class="edge" points="201.16666666666669,720 201.16666666666666,755 329.3333333333333,755 329.3333333333333,848" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="8" data-from="gh" data-to="osm"><polyline class="edge" points="371.83333333333337,720 371.83333333333337,755 383.66666666666674,755 383.66666666666674,848" marker-end="url(#al-arrow)"/></g>
 <g class="node" data-id="ui" tabindex="0" role="button" aria-label="Compose UI"><rect class="node-box" x="155.83333333333334" y="58" width="150" height="56" rx="12"/><g class="node-ic" style="color:#2563eb" transform="translate(169.83333333333334,76)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,160H40V56H216V200ZM80,84A12,12,0,1,1,68,72,12,12,0,0,1,80,84Zm40,0a12,12,0,1,1-12-12A12,12,0,0,1,120,84Z"/></svg></g><text class="node-label" x="199.83333333333334" y="91">Compose UI</text></g>
 <g class="node" data-id="vm" tabindex="0" role="button" aria-label="ViewModels"><rect class="node-box" x="155.83333333333334" y="134" width="150" height="56" rx="12"/><g class="node-ic" style="color:#0891b2" transform="translate(169.83333333333334,152)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z"/></svg></g><text class="node-label" x="199.83333333333334" y="167">ViewModels</text></g>
 <g class="node" data-id="repo" tabindex="0" role="button" aria-label="Repository"><rect class="node-box" x="155.83333333333334" y="210" width="150" height="56" rx="12"/><g class="node-ic" style="color:#0891b2" transform="translate(169.83333333333334,228)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z"/></svg></g><text class="node-label" x="199.83333333333334" y="243">Repository</text></g>
@@ -190,6 +215,7 @@ Flows:
   </details>
 </div>
 <script id="arch-spec" type="application/json">{"meta":{"title":"Commute+","theme":"auto","legend":true},"nodes":[{"id":"ui","label":"Compose UI","type":"ui"},{"id":"vm","label":"ViewModels","type":"client"},{"id":"repo","label":"Repository","type":"client"},{"id":"api","label":"REST API","type":"gateway","tech":"Ktor"},{"id":"fare","label":"Fare Engine","type":"service"},{"id":"otp","label":"OpenTripPlanner","type":"service"},{"id":"gh","label":"GraphHopper","type":"service"},{"id":"gtfs","label":"BMTC + Metro GTFS","type":"datastore"},{"id":"osm","label":"OpenStreetMap","type":"datastore"}],"groups":[{"id":"client","label":"Android App","nodes":["ui","vm","repo"]},{"id":"backend","label":"Backend (Ktor)","nodes":["api","fare"]},{"id":"routing","label":"Routing","nodes":["otp","gh"]},{"id":"data","label":"Data","nodes":["gtfs","osm"]}],"edges":[{"from":"ui","to":"vm","style":"solid"},{"from":"vm","to":"repo","style":"solid"},{"from":"repo","to":"api","label":"HTTPS","protocol":"REST","style":"solid"},{"from":"api","to":"otp","label":"GraphQL","style":"solid"},{"from":"api","to":"gh","style":"solid"},{"from":"api","to":"fare","style":"solid"},{"from":"otp","to":"gtfs","style":"solid"},{"from":"otp","to":"osm","style":"solid"},{"from":"gh","to":"osm","style":"solid"}],"flows":[{"name":"Plan a trip","steps":["ui","vm","repo","api","otp","api","vm","ui"]}]}</script>
+<script id="arch-geo" type="application/json">{"nodes":{"ui":{"cx":230.83333333333334,"cy":86},"vm":{"cx":230.83333333333334,"cy":162},"repo":{"cx":230.83333333333334,"cy":238},"api":{"cx":230.83333333333334,"cy":422},"fare":{"cx":268.33333333333337,"cy":508},"otp":{"cx":171.33333333333334,"cy":692},"gh":{"cx":371.83333333333337,"cy":692},"gtfs":{"cx":141.5,"cy":876},"osm":{"cx":356.5,"cy":876}},"edges":[{"from":"ui","to":"vm","points":[[95,90],[95,110]]},{"from":"vm","to":"repo","points":[[95,166],[95,186]]},{"from":"repo","to":"api","points":[[231,266],[231,394]]},{"from":"api","to":"otp","points":[[193,450],[193,460],[171,460],[171,664]]},{"from":"api","to":"gh","points":[[231,450],[231,470],[182,470],[182,571],[372,571],[372,664]]},{"from":"api","to":"fare","points":[[133,90],[133,120]]},{"from":"otp","to":"gtfs","points":[[142,720],[142,848]]},{"from":"otp","to":"osm","points":[[201,720],[201,755],[329,755],[329,848]]},{"from":"gh","to":"osm","points":[[372,720],[372,755],[384,755],[384,848]]}],"flows":[{"name":"Plan a trip","steps":["ui","vm","repo","api","otp","api","vm","ui"]}]}</script>
 <script>
 (function () {
   var spec = JSON.parse(document.getElementById("arch-spec").textContent);
@@ -288,6 +314,88 @@ Flows:
     document.documentElement.setAttribute("data-theme", next);
     tbtn.textContent = next === "dark" ? "Light" : "Dark";
   });
+
+  // ---- flow animation ----
+  var geo = (function(){ var el = document.getElementById("arch-geo"); return el ? JSON.parse(el.textContent) : { nodes:{}, edges:[], flows:[] }; })();
+  var edgeMap = {}; geo.edges.forEach(function(e){ edgeMap[e.from + ">" + e.to] = e.points; });
+  var flowSel = document.getElementById("al-flow");
+  var playBtn = document.getElementById("al-play");
+  var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var anim = null, dot = null;
+
+  function clearFlow() {
+    if (anim) { cancelAnimationFrame(anim); anim = null; }
+    if (dot) { dot.remove(); dot = null; }
+    svg.querySelectorAll(".edge-g").forEach(function(g){ g.classList.remove("flow-active","dim"); });
+    svg.querySelectorAll(".node").forEach(function(g){ g.classList.remove("flow-node","dim"); });
+  }
+  function flowPath(flow) {
+    var pts = [];
+    function push(p){ if(pts.length){ var l=pts[pts.length-1]; if(l[0]===p[0]&&l[1]===p[1]) return; } pts.push(p); }
+    for (var i=0;i<flow.steps.length-1;i++){
+      var a=flow.steps[i], b=flow.steps[i+1];
+      var seg=edgeMap[a+">"+b], rev=false;
+      if(!seg){ seg=edgeMap[b+">"+a]; rev=!!seg; }
+      if(seg){ var s=seg.slice(); if(rev) s=s.slice().reverse(); s.forEach(push); }
+      else { var na=geo.nodes[a], nb=geo.nodes[b]; if(na) push([na.cx,na.cy]); if(nb) push([nb.cx,nb.cy]); }
+    }
+    return pts;
+  }
+  function highlightFlow(flow) {
+    var edgeSet={}, nodeSet={};
+    for(var i=0;i<flow.steps.length-1;i++){ var a=flow.steps[i],b=flow.steps[i+1]; edgeSet[a+">"+b]=1; edgeSet[b+">"+a]=1; }
+    flow.steps.forEach(function(s){ nodeSet[s]=1; });
+    svg.querySelectorAll(".edge-g").forEach(function(g){
+      var key=g.getAttribute("data-from")+">"+g.getAttribute("data-to");
+      if(edgeSet[key]){ g.classList.add("flow-active"); g.classList.remove("dim"); }
+      else { g.classList.add("dim"); g.classList.remove("flow-active"); }
+    });
+    svg.querySelectorAll(".node").forEach(function(g){
+      if(nodeSet[g.getAttribute("data-id")]){ g.classList.add("flow-node"); g.classList.remove("dim"); }
+      else { g.classList.add("dim"); g.classList.remove("flow-node"); }
+    });
+  }
+  function animateFlow(flow) {
+    var pts=flowPath(flow); if(pts.length<2) return;
+    var seglen=[], total=0;
+    for(var i=1;i<pts.length;i++){ var dx=pts[i][0]-pts[i-1][0], dy=pts[i][1]-pts[i-1][1]; var d=Math.sqrt(dx*dx+dy*dy); seglen.push(d); total+=d; }
+    dot=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    dot.setAttribute("class","flow-dot"+(reduce?" pulse":"")); dot.setAttribute("r","6");
+    vp.appendChild(dot);
+    function at(dist){ if(dist<=0) return pts[0]; var acc=0; for(var i=0;i<seglen.length;i++){ if(acc+seglen[i]>=dist){ var t=(dist-acc)/(seglen[i]||1); return [pts[i][0]+(pts[i+1][0]-pts[i][0])*t, pts[i][1]+(pts[i+1][1]-pts[i][1])*t]; } acc+=seglen[i]; } return pts[pts.length-1]; }
+    if(reduce){ var mid=at(total/2); dot.setAttribute("cx",mid[0]); dot.setAttribute("cy",mid[1]); return; }
+    var dur=Math.max(1400,total*3), start=null;
+    function frame(ts){ if(start===null)start=ts; var el=(ts-start)%dur; var p=at((el/dur)*total); dot.setAttribute("cx",p[0]); dot.setAttribute("cy",p[1]); anim=requestAnimationFrame(frame); }
+    anim=requestAnimationFrame(frame);
+  }
+  function playFlow(idx){ clearFlow(); var flow=geo.flows[idx]; if(!flow) return; highlightFlow(flow); animateFlow(flow); }
+  if (flowSel) {
+    flowSel.addEventListener("change", function(){ var v=flowSel.value; if(v==="") clearFlow(); else playFlow(parseInt(v,10)); });
+    playBtn.addEventListener("click", function(){ var v=flowSel.value; if(v===""&&geo.flows.length){ flowSel.value="0"; v="0"; } if(v!=="") playFlow(parseInt(v,10)); });
+  }
+
+  // ---- PNG export (client-side, self-contained) ----
+  var pngBtn=document.getElementById("al-png");
+  if(pngBtn) pngBtn.addEventListener("click", exportPng);
+  function exportPng(){
+    var vb=svg.viewBox.baseVal;
+    var clone=svg.cloneNode(true);
+    clone.setAttribute("width",vb.width); clone.setAttribute("height",vb.height); clone.removeAttribute("style");
+    var vpc=clone.querySelector("#al-viewport"); if(vpc) vpc.setAttribute("transform","translate(12,12)");
+    var srcAll=svg.querySelectorAll("*"), dstAll=clone.querySelectorAll("*");
+    var props=["fill","stroke","stroke-width","stroke-dasharray","stroke-linecap","stroke-linejoin","font-size","font-weight","font-family","color","opacity","text-anchor"];
+    for(var i=0;i<srcAll.length;i++){ var cs=getComputedStyle(srcAll[i]); var s=""; for(var j=0;j<props.length;j++){ var v=cs.getPropertyValue(props[j]); if(v) s+=props[j]+":"+v+";"; } dstAll[i].setAttribute("style",s); }
+    var bg=getComputedStyle(document.body).backgroundColor||"#ffffff";
+    var rect=document.createElementNS("http://www.w3.org/2000/svg","rect");
+    rect.setAttribute("x","0"); rect.setAttribute("y","0"); rect.setAttribute("width",vb.width); rect.setAttribute("height",vb.height); rect.setAttribute("fill",bg);
+    clone.insertBefore(rect,clone.firstChild);
+    var xml=new XMLSerializer().serializeToString(clone);
+    var url=URL.createObjectURL(new Blob([xml],{type:"image/svg+xml;charset=utf-8"}));
+    var img=new Image();
+    img.onload=function(){ var scale=2, canvas=document.createElement("canvas"); canvas.width=vb.width*scale; canvas.height=vb.height*scale; var ctx=canvas.getContext("2d"); ctx.scale(scale,scale); ctx.drawImage(img,0,0); URL.revokeObjectURL(url); canvas.toBlob(function(blob){ if(!blob) return; var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=(document.title||"diagram").replace(/[^a-z0-9]+/gi,"-").replace(/^-+|-+$/g,"").toLowerCase()+".png"; a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); },1000); }); };
+    img.onerror=function(){ URL.revokeObjectURL(url); };
+    img.src=url;
+  }
 
   window.addEventListener("resize", fit);
   fit();

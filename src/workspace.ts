@@ -11,6 +11,7 @@ import {
 } from "./schema.js";
 import { layoutSpec } from "./layout.js";
 import { renderSvg, renderHtml } from "./render.js";
+import { toMermaid } from "./mermaid.js";
 import { textOutline } from "./outline.js";
 import { sanitizeText } from "./lint.js";
 import { startServer, type ServerHandle } from "./server.js";
@@ -154,12 +155,15 @@ export class ArchlensWorkspace {
   }
 
   /** Export the current diagram to a format. Returns the absolute output path. */
-  async export(format: "svg" | "html" | "json", outPath?: string): Promise<{ file: string }> {
+  async export(
+    format: "svg" | "html" | "json" | "mermaid",
+    outPath?: string
+  ): Promise<{ file: string }> {
     if (!this.current) {
       throw new Error("No diagram to export yet. Call render_architecture first.");
     }
     const spec = this.current;
-    const ext = "." + format;
+    const ext = format === "mermaid" ? ".mmd" : "." + format;
     const target = path.resolve(
       outPath ?? path.join(this.outDir, this.currentName + ext)
     );
@@ -167,6 +171,8 @@ export class ArchlensWorkspace {
 
     if (format === "json") {
       await fs.writeFile(target, JSON.stringify(spec, null, 2), "utf8");
+    } else if (format === "mermaid") {
+      await fs.writeFile(target, toMermaid(spec), "utf8");
     } else if (format === "svg") {
       const layout = await layoutSpec(spec);
       await fs.writeFile(target, renderSvg(layout, spec), "utf8");

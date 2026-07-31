@@ -1,0 +1,27 @@
+flowchart TD
+  subgraph grp_client["Android App"]
+    ui("Compose UI")
+    vm("ViewModels")
+    repo("Repository")
+  end
+  subgraph grp_backend["Backend (Ktor)"]
+    api["REST API (Ktor)"]
+    fare["Fare Engine"]
+  end
+  subgraph grp_routing["Routing"]
+    otp["OpenTripPlanner"]
+    gh["GraphHopper"]
+  end
+  subgraph grp_data["Data"]
+    gtfs[("BMTC + Metro GTFS")]
+    osm[("OpenStreetMap")]
+  end
+  ui --> vm
+  vm --> repo
+  repo -->|"HTTPS"| api
+  api -->|"GraphQL"| otp
+  api --> gh
+  api --> fare
+  otp --> gtfs
+  otp --> osm
+  gh --> osm

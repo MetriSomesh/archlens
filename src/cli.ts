@@ -41,18 +41,24 @@ program
   .option("-o, --out <dir>", "Output directory", ".archlens")
   .option("-n, --name <name>", "Diagram name / file stem")
   .option("--svg", "Also export an .svg alongside the .html")
-  .action(async (spec: string, opts: { out: string; name?: string; svg?: boolean }) => {
-    const ws = new ArchlensWorkspace({ outDir: opts.out, serve: false });
-    const input = await readSpec(spec);
-    const result = await ws.render(input, opts.name);
-    process.stdout.write(`Rendered "${result.name}" (${result.summary})\n`);
-    process.stdout.write(`  ${result.file}\n`);
-    if (opts.svg) {
-      const { file } = await ws.export("svg");
-      process.stdout.write(`  ${file}\n`);
+  .option("--mermaid", "Also export a .mmd (Mermaid flowchart)")
+  .option("--json", "Also export the normalized .json spec")
+  .action(
+    async (
+      spec: string,
+      opts: { out: string; name?: string; svg?: boolean; mermaid?: boolean; json?: boolean }
+    ) => {
+      const ws = new ArchlensWorkspace({ outDir: opts.out, serve: false });
+      const input = await readSpec(spec);
+      const result = await ws.render(input, opts.name);
+      process.stdout.write(`Rendered "${result.name}" (${result.summary})\n`);
+      process.stdout.write(`  ${result.file}\n`);
+      if (opts.svg) process.stdout.write(`  ${(await ws.export("svg")).file}\n`);
+      if (opts.mermaid) process.stdout.write(`  ${(await ws.export("mermaid")).file}\n`);
+      if (opts.json) process.stdout.write(`  ${(await ws.export("json")).file}\n`);
+      for (const w of result.warnings) process.stdout.write(`  warning: ${w}\n`);
     }
-    for (const w of result.warnings) process.stdout.write(`  warning: ${w}\n`);
-  });
+  );
 
 program
   .command("serve")
