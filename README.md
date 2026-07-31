@@ -24,7 +24,7 @@ Under active construction. Built in phases:
 - [x] Phase 1 — interactive HTML renderer + taste
 - [x] Phase 2 — MCP server + local server with live reload
 - [x] Phase 3 — flow animation + exports (SVG / PNG / Mermaid) + cycle warnings
-- [ ] Phase 4 — skill packaging + docs + CI
+- [x] Phase 4 — skill packaging + docs + CI
 
 ## Usage
 
@@ -82,6 +82,44 @@ The generated HTML is self-contained and offline-friendly. In the browser you ge
 - An accessible **text outline** fallback for no-JS / screen readers.
 
 Cycles and orphan components are surfaced as warnings on every render.
+
+## The spec
+
+The spec is layout-free: you describe *logical structure*, Archlens owns the *layout*.
+
+- **node** `{ id, label, type, tech?, description?, group? }` where `type` is one of
+  `ui`, `client`, `gateway`, `service`, `job`, `queue`, `cache`, `datastore`, `external`
+  (drives icon + semantic color).
+- **group** `{ id, label, nodes[], parent? }` a boundary/layer (nesting allowed).
+- **edge** `{ from, to, label?, protocol?, style? }` a directed, labeled relationship
+  (`style: "dashed"` for async).
+- **flow** `{ name, steps[] }` an ordered path for the animated walkthrough.
+- **meta** `{ title, theme?, legend? }`.
+
+See [`examples/commute-plus.json`](examples/commute-plus.json) for a full example and
+[`examples/`](examples/) for its rendered outputs.
+
+## Skill
+
+Archlens ships a [skill](skill/SKILL.md) that teaches an agent when to reach for a
+diagram and how to author a good spec. Its visual taste is sourced from
+[Taste Skill](https://github.com/Leonxlnx/taste-skill) (`design-taste-frontend`):
+
+```bash
+npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-frontend"
+```
+
+## Development
+
+```bash
+corepack enable          # use the pinned pnpm
+pnpm install
+pnpm run build           # tsc -> dist/
+pnpm test                # build + node --test
+```
+
+The toolchain is deliberately lean (TypeScript + the Node test runner, no bundler).
+ESM with NodeNext, so relative imports carry `.js` extensions.
 
 ## License
 
