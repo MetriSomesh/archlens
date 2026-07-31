@@ -1,0 +1,34 @@
+{
+  "meta": { "title": "Commute+", "theme": "auto" },
+  "groups": [
+    { "id": "client", "label": "Android App", "nodes": ["ui", "vm", "repo"] },
+    { "id": "backend", "label": "Backend (Ktor)", "nodes": ["api", "fare"] },
+    { "id": "routing", "label": "Routing", "nodes": ["otp", "gh"] },
+    { "id": "data", "label": "Data", "nodes": ["gtfs", "osm"] }
+  ],
+  "nodes": [
+    { "id": "ui", "label": "Compose UI", "type": "ui" },
+    { "id": "vm", "label": "ViewModels", "type": "client" },
+    { "id": "repo", "label": "Repository", "type": "client" },
+    { "id": "api", "label": "REST API", "type": "gateway", "tech": "Ktor" },
+    { "id": "fare", "label": "Fare Engine", "type": "service" },
+    { "id": "otp", "label": "OpenTripPlanner", "type": "service" },
+    { "id": "gh", "label": "GraphHopper", "type": "service" },
+    { "id": "gtfs", "label": "BMTC + Metro GTFS", "type": "datastore" },
+    { "id": "osm", "label": "OpenStreetMap", "type": "datastore" }
+  ],
+  "edges": [
+    { "from": "ui", "to": "vm" },
+    { "from": "vm", "to": "repo" },
+    { "from": "repo", "to": "api", "label": "HTTPS", "protocol": "REST" },
+    { "from": "api", "to": "otp", "label": "GraphQL" },
+    { "from": "api", "to": "gh" },
+    { "from": "api", "to": "fare" },
+    { "from": "otp", "to": "gtfs" },
+    { "from": "otp", "to": "osm" },
+    { "from": "gh", "to": "osm" }
+  ],
+  "flows": [
+    { "name": "Plan a trip", "steps": ["ui", "vm", "repo", "api", "otp", "api", "vm", "ui"] }
+  ]
+}
