@@ -20,8 +20,8 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the full architecture and roadmap.
 
 Under active construction. Built in phases:
 
-- [ ] Phase 0 — spec schema + ELK layout + static render
-- [ ] Phase 1 — interactive HTML renderer + taste
+- [x] Phase 0 — spec schema + ELK layout + static render
+- [x] Phase 1 — interactive HTML renderer + taste
 - [ ] Phase 2 — MCP server + local server with live reload
 - [ ] Phase 3 — flow animation + exports (SVG / PNG / Mermaid)
 - [ ] Phase 4 — skill packaging + docs + CI

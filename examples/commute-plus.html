@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Commute+ - Archlens</title>
+<style>
+:root {
+  --font: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  --accent: #0d9488;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --space: 8px;
+
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --surface-2: #f4f5f7;
+  --border: #d9dce1;
+  --border-strong: #c2c7cf;
+  --text: #1c2027;
+  --text-dim: #5c626c;
+  --edge: #9aa0aa;
+  --edge-label-bg: #ffffff;
+}
+:root[data-theme="dark"] {
+  --bg: #0f1115;
+  --surface: #171a21;
+  --surface-2: #1e222b;
+  --border: #2c313b;
+  --border-strong: #3a414d;
+  --text: #e8eaed;
+  --text-dim: #9aa1ad;
+  --edge: #6b7280;
+  --edge-label-bg: #171a21;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115;
+    --surface: #171a21;
+    --surface-2: #1e222b;
+    --border: #2c313b;
+    --border-strong: #3a414d;
+    --text: #e8eaed;
+    --text-dim: #9aa1ad;
+    --edge: #6b7280;
+    --edge-label-bg: #171a21;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); }
+#al-app { display: flex; flex-direction: column; height: 100vh; }
+header.al-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; border-bottom: 1px solid var(--border);
+  background: var(--surface); min-height: 56px;
+}
+.al-title { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+.al-spacer { flex: 1; }
+.al-btn {
+  appearance: none; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); border-radius: var(--radius-sm); height: 34px; min-width: 34px;
+  padding: 0 10px; font-family: var(--font); font-size: 13px; cursor: pointer;
+}
+.al-btn:hover { border-color: var(--border-strong); }
+.al-btn:active { transform: translateY(1px); }
+main.al-main { position: relative; flex: 1; overflow: hidden; }
+#al-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#al-canvas.grabbing { cursor: grabbing; }
+
+.group-box { fill: var(--surface-2); stroke: var(--border); stroke-width: 1; }
+.group-label { fill: var(--text-dim); font-size: 12px; font-weight: 600; letter-spacing: 0.01em; }
+.node-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.2px; }
+.node:hover .node-box, .node:focus .node-box { stroke: var(--accent); outline: none; }
+.node.selected .node-box { stroke: var(--accent); stroke-width: 2px; }
+.node { cursor: pointer; }
+.node-label { fill: var(--text); font-size: 14px; font-weight: 500; }
+.node-tech { fill: var(--text-dim); font-size: 11px; font-family: var(--mono); }
+.node-ic { }
+.edge { fill: none; stroke: var(--edge); stroke-width: 1.6px; }
+.edge-dashed { stroke-dasharray: 6 5; }
+.edge-label { fill: var(--text-dim); font-size: 11px; paint-order: stroke; stroke: var(--edge-label-bg); stroke-width: 3px; }
+.al-arrow path { fill: var(--edge); }
+.node.dim, .edge-g.dim { opacity: 0.25; }
+
+aside.al-detail {
+  position: absolute; top: 12px; right: 12px; width: 280px; max-width: calc(100% - 24px);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; display: none; box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+}
+aside.al-detail.open { display: block; }
+.al-detail h2 { margin: 0 0 4px; font-size: 15px; }
+.al-detail .al-type { color: var(--text-dim); font-size: 12px; text-transform: capitalize; }
+.al-detail .al-tech { font-family: var(--mono); font-size: 12px; color: var(--accent); margin-top: 6px; }
+.al-detail p { font-size: 13px; color: var(--text); line-height: 1.5; margin: 10px 0 0; }
+.al-detail ul { margin: 8px 0 0; padding-left: 16px; font-size: 12px; color: var(--text-dim); }
+.al-detail .al-close { position: absolute; top: 10px; right: 10px; }
+
+.al-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; padding: 8px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+.al-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+.al-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+details.al-outline { padding: 8px 16px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+details.al-outline summary { cursor: pointer; font-size: 13px; color: var(--text-dim); }
+details.al-outline pre { font-family: var(--mono); font-size: 12px; color: var(--text); white-space: pre-wrap; margin: 10px 0 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .al-btn, .node-box, .edge-g, .node { transition: opacity 0.2s ease, stroke 0.15s ease, transform 0.05s ease; }
+}
+</style>
+</head>
+<body>
+<div id="al-app">
+  <header class="al-bar">
+    <span class="al-title">Commute+</span>
+    <span class="al-spacer"></span>
+    <button class="al-btn" id="al-zout" aria-label="Zoom out">-</button>
+    <button class="al-btn" id="al-reset" aria-label="Fit to view">Fit</button>
+    <button class="al-btn" id="al-zin" aria-label="Zoom in">+</button>
+    <button class="al-btn" id="al-theme" aria-label="Toggle theme">Theme</button>
+  </header>
+  <main class="al-main">
+    <svg id="al-canvas" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 515 972" role="img" aria-label="Commute+ architecture diagram">
+  <defs>
+    <marker id="al-arrow" class="al-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z"/>
+    </marker>
+  </defs>
+  <g id="al-viewport" transform="translate(12,12)">
+<g class="group"><rect class="group-box" x="135.83333333333334" y="24" width="190" height="262" rx="14"/><text class="group-label" x="151.83333333333334" y="46">Android App</text></g>
+<g class="group"><rect class="group-box" x="135.83333333333334" y="360" width="227.5" height="196" rx="14"/><text class="group-label" x="151.83333333333334" y="382">Backend (Ktor)</text></g>
+<g class="group"><rect class="group-box" x="61.83333333333334" y="630" width="405" height="110" rx="14"/><text class="group-label" x="77.83333333333334" y="652">Routing</text></g>
+<g class="group"><rect class="group-box" x="24" y="814" width="434" height="110" rx="14"/><text class="group-label" x="40" y="836">Data</text></g>
+<g class="edge-g" data-edge="0"><polyline class="edge" points="95,90 95,110" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="1"><polyline class="edge" points="95,166 95,186" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="2"><polyline class="edge" points="230.83333333333334,266 230.83333333333334,394" marker-end="url(#al-arrow)"/><text class="edge-label" x="230.83333333333334" y="389" text-anchor="middle">HTTPS</text></g>
+<g class="edge-g" data-edge="3"><polyline class="edge" points="193.33333333333334,450 193.33333333333334,460 171.33333333333334,460 171.33333333333334,664" marker-end="url(#al-arrow)"/><text class="edge-label" x="171.33333333333334" y="455" text-anchor="middle">GraphQL</text></g>
+<g class="edge-g" data-edge="4"><polyline class="edge" points="230.83333333333334,450 230.83333333333334,470 182.33333333333334,470 182.33333333333334,571 371.83333333333337,571 371.83333333333337,664" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="5"><polyline class="edge" points="132.5,90 132.5,120" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="6"><polyline class="edge" points="141.5,720 141.5,848" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="7"><polyline class="edge" points="201.16666666666669,720 201.16666666666666,755 329.3333333333333,755 329.3333333333333,848" marker-end="url(#al-arrow)"/></g>
+<g class="edge-g" data-edge="8"><polyline class="edge" points="371.83333333333337,720 371.83333333333337,755 383.66666666666674,755 383.66666666666674,848" marker-end="url(#al-arrow)"/></g>
+<g class="node" data-id="ui" tabindex="0" role="button" aria-label="Compose UI"><rect class="node-box" x="155.83333333333334" y="58" width="150" height="56" rx="12"/><g class="node-ic" style="color:#2563eb" transform="translate(169.83333333333334,76)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,160H40V56H216V200ZM80,84A12,12,0,1,1,68,72,12,12,0,0,1,80,84Zm40,0a12,12,0,1,1-12-12A12,12,0,0,1,120,84Z"/></svg></g><text class="node-label" x="199.83333333333334" y="91">Compose UI</text></g>
+<g class="node" data-id="vm" tabindex="0" role="button" aria-label="ViewModels"><rect class="node-box" x="155.83333333333334" y="134" width="150" height="56" rx="12"/><g class="node-ic" style="color:#0891b2" transform="translate(169.83333333333334,152)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z"/></svg></g><text class="node-label" x="199.83333333333334" y="167">ViewModels</text></g>
+<g class="node" data-id="repo" tabindex="0" role="button" aria-label="Repository"><rect class="node-box" x="155.83333333333334" y="210" width="150" height="56" rx="12"/><g class="node-ic" style="color:#0891b2" transform="translate(169.83333333333334,228)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z"/></svg></g><text class="node-label" x="199.83333333333334" y="243">Repository</text></g>
+<g class="node" data-id="api" tabindex="0" role="button" aria-label="REST API"><rect class="node-box" x="155.83333333333334" y="394" width="150" height="56" rx="12"/><g class="node-ic" style="color:#0d9488" transform="translate(169.83333333333334,412)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M237.66,18.34a8,8,0,0,0-11.32,0l-52.4,52.41-5.37-5.38a32.05,32.05,0,0,0-45.26,0L100,88.69l-6.34-6.35A8,8,0,0,0,82.34,93.66L88.69,100,65.37,123.31a32,32,0,0,0,0,45.26l5.38,5.37-52.41,52.4a8,8,0,0,0,11.32,11.32l52.4-52.41,5.37,5.38a32,32,0,0,0,45.26,0L156,167.31l6.34,6.35a8,8,0,0,0,11.32-11.32L167.31,156l23.32-23.31a32,32,0,0,0,0-45.26l-5.38-5.37,52.41-52.4A8,8,0,0,0,237.66,18.34Zm-116.29,161a16,16,0,0,1-22.62,0L76.69,157.25a16,16,0,0,1,0-22.62L100,111.31,144.69,156Zm57.94-57.94L156,144.69,111.31,100l23.32-23.31a16,16,0,0,1,22.62,0l22.06,22A16,16,0,0,1,179.31,121.37ZM88.57,35A8,8,0,0,1,103.43,29l8,20A8,8,0,0,1,96.57,55ZM24.57,93A8,8,0,0,1,35,88.57l20,8A8,8,0,0,1,49,111.43l-20-8A8,8,0,0,1,24.57,93ZM231.43,163a8,8,0,0,1-10.4,4.46l-20-8A8,8,0,1,1,207,144.57l20,8A8,8,0,0,1,231.43,163Zm-64,58.06A8,8,0,0,1,152.57,227l-8-20A8,8,0,0,1,159.43,201Z"/></svg></g><text class="node-label" x="199.83333333333334" y="419">REST API</text><text class="node-tech" x="199.83333333333334" y="435">Ktor</text></g>
+<g class="node" data-id="fare" tabindex="0" role="button" aria-label="Fare Engine"><rect class="node-box" x="193.33333333333334" y="480" width="150" height="56" rx="12"/><g class="node-ic" style="color:#7c3aed" transform="translate(207.33333333333334,498)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M223.68,66.15,135.68,18h0a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32h0l80.34,44L128,120,47.66,76ZM40,90l80,43.78v85.79L40,175.82Zm96,129.57V133.82L216,90v85.78Z"/></svg></g><text class="node-label" x="237.33333333333334" y="513">Fare Engine</text></g>
+<g class="node" data-id="otp" tabindex="0" role="button" aria-label="OpenTripPlanner"><rect class="node-box" x="81.83333333333334" y="664" width="179" height="56" rx="12"/><g class="node-ic" style="color:#7c3aed" transform="translate(95.83333333333334,682)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M223.68,66.15,135.68,18h0a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32h0l80.34,44L128,120,47.66,76ZM40,90l80,43.78v85.79L40,175.82Zm96,129.57V133.82L216,90v85.78Z"/></svg></g><text class="node-label" x="125.83333333333334" y="697">OpenTripPlanner</text></g>
+<g class="node" data-id="gh" tabindex="0" role="button" aria-label="GraphHopper"><rect class="node-box" x="296.83333333333337" y="664" width="150" height="56" rx="12"/><g class="node-ic" style="color:#7c3aed" transform="translate(310.83333333333337,682)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M223.68,66.15,135.68,18h0a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32h0l80.34,44L128,120,47.66,76ZM40,90l80,43.78v85.79L40,175.82Zm96,129.57V133.82L216,90v85.78Z"/></svg></g><text class="node-label" x="340.83333333333337" y="697">GraphHopper</text></g>
+<g class="node" data-id="gtfs" tabindex="0" role="button" aria-label="BMTC + Metro GTFS"><rect class="node-box" x="44" y="848" width="195" height="56" rx="12"/><g class="node-ic" style="color:#059669" transform="translate(58,866)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24C74.17,24,32,48.6,32,80v96c0,31.4,42.17,56,96,56s96-24.6,96-56V80C224,48.6,181.83,24,128,24Zm80,104c0,9.62-7.88,19.43-21.61,26.92C170.93,163.35,150.19,168,128,168s-42.93-4.65-58.39-13.08C55.88,147.43,48,137.62,48,128V111.36c17.06,15,46.23,24.64,80,24.64s62.94-9.68,80-24.64ZM69.61,53.08C85.07,44.65,105.81,40,128,40s42.93,4.65,58.39,13.08C200.12,60.57,208,70.38,208,80s-7.88,19.43-21.61,26.92C170.93,115.35,150.19,120,128,120s-42.93-4.65-58.39-13.08C55.88,99.43,48,89.62,48,80S55.88,60.57,69.61,53.08ZM186.39,202.92C170.93,211.35,150.19,216,128,216s-42.93-4.65-58.39-13.08C55.88,195.43,48,185.62,48,176V159.36c17.06,15,46.23,24.64,80,24.64s62.94-9.68,80-24.64V176C208,185.62,200.12,195.43,186.39,202.92Z"/></svg></g><text class="node-label" x="88" y="881">BMTC + Metro GTFS</text></g>
+<g class="node" data-id="osm" tabindex="0" role="button" aria-label="OpenStreetMap"><rect class="node-box" x="275" y="848" width="163" height="56" rx="12"/><g class="node-ic" style="color:#059669" transform="translate(289,866)"><svg class="node-icon" width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24C74.17,24,32,48.6,32,80v96c0,31.4,42.17,56,96,56s96-24.6,96-56V80C224,48.6,181.83,24,128,24Zm80,104c0,9.62-7.88,19.43-21.61,26.92C170.93,163.35,150.19,168,128,168s-42.93-4.65-58.39-13.08C55.88,147.43,48,137.62,48,128V111.36c17.06,15,46.23,24.64,80,24.64s62.94-9.68,80-24.64ZM69.61,53.08C85.07,44.65,105.81,40,128,40s42.93,4.65,58.39,13.08C200.12,60.57,208,70.38,208,80s-7.88,19.43-21.61,26.92C170.93,115.35,150.19,120,128,120s-42.93-4.65-58.39-13.08C55.88,99.43,48,89.62,48,80S55.88,60.57,69.61,53.08ZM186.39,202.92C170.93,211.35,150.19,216,128,216s-42.93-4.65-58.39-13.08C55.88,195.43,48,185.62,48,176V159.36c17.06,15,46.23,24.64,80,24.64s62.94-9.68,80-24.64V176C208,185.62,200.12,195.43,186.39,202.92Z"/></svg></g><text class="node-label" x="319" y="881">OpenStreetMap</text></g>
+  </g>
+</svg>
+    <aside class="al-detail" id="al-detail" aria-live="polite"></aside>
+  </main>
+  <div class="al-legend"><span><i style="background:#2563eb"></i>ui</span><span><i style="background:#0891b2"></i>client</span><span><i style="background:#0d9488"></i>gateway</span><span><i style="background:#7c3aed"></i>service</span><span><i style="background:#059669"></i>datastore</span></div>
+  <details class="al-outline">
+    <summary>Text outline (accessible view)</summary>
+    <pre>Commute+
+
+Components:
+  [Android App]
+    - Compose UI (ui)
+    - ViewModels (client)
+    - Repository (client)
+  [Backend (Ktor)]
+    - REST API (gateway) [Ktor]
+    - Fare Engine (service)
+  [Routing]
+    - OpenTripPlanner (service)
+    - GraphHopper (service)
+  [Data]
+    - BMTC + Metro GTFS (datastore)
+    - OpenStreetMap (datastore)
+
+Connections:
+  Compose UI -&gt; ViewModels
+  ViewModels -&gt; Repository
+  Repository -&gt; REST API (HTTPS)
+  REST API -&gt; OpenTripPlanner (GraphQL)
+  REST API -&gt; GraphHopper
+  REST API -&gt; Fare Engine
+  OpenTripPlanner -&gt; BMTC + Metro GTFS
+  OpenTripPlanner -&gt; OpenStreetMap
+  GraphHopper -&gt; OpenStreetMap
+
+Flows:
+  Plan a trip: Compose UI -&gt; ViewModels -&gt; Repository -&gt; REST API -&gt; OpenTripPlanner -&gt; REST API -&gt; ViewModels -&gt; Compose UI</pre>
+  </details>
+</div>
+<script id="arch-spec" type="application/json">{"meta":{"title":"Commute+","theme":"auto","legend":true},"nodes":[{"id":"ui","label":"Compose UI","type":"ui"},{"id":"vm","label":"ViewModels","type":"client"},{"id":"repo","label":"Repository","type":"client"},{"id":"api","label":"REST API","type":"gateway","tech":"Ktor"},{"id":"fare","label":"Fare Engine","type":"service"},{"id":"otp","label":"OpenTripPlanner","type":"service"},{"id":"gh","label":"GraphHopper","type":"service"},{"id":"gtfs","label":"BMTC + Metro GTFS","type":"datastore"},{"id":"osm","label":"OpenStreetMap","type":"datastore"}],"groups":[{"id":"client","label":"Android App","nodes":["ui","vm","repo"]},{"id":"backend","label":"Backend (Ktor)","nodes":["api","fare"]},{"id":"routing","label":"Routing","nodes":["otp","gh"]},{"id":"data","label":"Data","nodes":["gtfs","osm"]}],"edges":[{"from":"ui","to":"vm","style":"solid"},{"from":"vm","to":"repo","style":"solid"},{"from":"repo","to":"api","label":"HTTPS","protocol":"REST","style":"solid"},{"from":"api","to":"otp","label":"GraphQL","style":"solid"},{"from":"api","to":"gh","style":"solid"},{"from":"api","to":"fare","style":"solid"},{"from":"otp","to":"gtfs","style":"solid"},{"from":"otp","to":"osm","style":"solid"},{"from":"gh","to":"osm","style":"solid"}],"flows":[{"name":"Plan a trip","steps":["ui","vm","repo","api","otp","api","vm","ui"]}]}</script>
+<script>
+(function () {
+  var spec = JSON.parse(document.getElementById("arch-spec").textContent);
+  var nodeById = {}; spec.nodes.forEach(function (n) { nodeById[n.id] = n; });
+  var svg = document.getElementById("al-canvas");
+  var vp = document.getElementById("al-viewport");
+  var state = { x: 0, y: 0, k: 1 };
+  var base = { x: 0, y: 0 };
+  // capture base translate from initial transform
+  var m = /translate\(([-0-9.]+),([-0-9.]+)\)/.exec(vp.getAttribute("transform") || "");
+  if (m) { base.x = parseFloat(m[1]); base.y = parseFloat(m[2]); }
+  function apply() {
+    vp.setAttribute("transform", "translate(" + (base.x + state.x) + "," + (base.y + state.y) + ") scale(" + state.k + ")");
+  }
+  // fit to view
+  function fit() {
+    var vb = svg.viewBox.baseVal; var r = svg.getBoundingClientRect();
+    if (!vb.width || !r.width) return;
+    var k = Math.min(r.width / vb.width, r.height / vb.height) * 0.94;
+    state.k = k > 0 ? k : 1;
+    state.x = (r.width - vb.width * state.k) / 2;
+    state.y = (r.height - vb.height * state.k) / 2;
+    // base was in svg user units; recompute using no base for fit
+    base.x = 0; base.y = 0; apply();
+  }
+  // pan
+  var dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+  svg.addEventListener("mousedown", function (e) {
+    if (e.target.closest(".node")) return;
+    dragging = true; sx = e.clientX; sy = e.clientY; ox = state.x; oy = state.y;
+    svg.classList.add("grabbing");
+  });
+  window.addEventListener("mousemove", function (e) {
+    if (!dragging) return; state.x = ox + (e.clientX - sx); state.y = oy + (e.clientY - sy); apply();
+  });
+  window.addEventListener("mouseup", function () { dragging = false; svg.classList.remove("grabbing"); });
+  // zoom
+  svg.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    var r = svg.getBoundingClientRect();
+    var mx = e.clientX - r.left, my = e.clientY - r.top;
+    var factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    var nk = Math.max(0.15, Math.min(4, state.k * factor));
+    // zoom toward cursor
+    state.x = mx - (mx - state.x) * (nk / state.k);
+    state.y = my - (my - state.y) * (nk / state.k);
+    state.k = nk; apply();
+  }, { passive: false });
+  function zoom(f) { var nk = Math.max(0.15, Math.min(4, state.k * f)); var r = svg.getBoundingClientRect(); var cx = r.width/2, cy = r.height/2; state.x = cx - (cx - state.x) * (nk/state.k); state.y = cy - (cy - state.y) * (nk/state.k); state.k = nk; apply(); }
+  document.getElementById("al-zin").addEventListener("click", function(){ zoom(1.2); });
+  document.getElementById("al-zout").addEventListener("click", function(){ zoom(1/1.2); });
+  document.getElementById("al-reset").addEventListener("click", fit);
+
+  // selection + detail
+  var detail = document.getElementById("al-detail");
+  function connectionsFor(id) {
+    var outs = spec.edges.filter(function(e){return e.from===id;}).map(function(e){ return (nodeById[e.to]?nodeById[e.to].label:e.to) + (e.label?" ("+e.label+")":""); });
+    var ins = spec.edges.filter(function(e){return e.to===id;}).map(function(e){ return (nodeById[e.from]?nodeById[e.from].label:e.from) + (e.label?" ("+e.label+")":""); });
+    return { outs: outs, ins: ins };
+  }
+  function select(id) {
+    var all = svg.querySelectorAll(".node");
+    all.forEach(function(g){ g.classList.toggle("selected", g.getAttribute("data-id")===id); });
+    var n = nodeById[id]; if (!n) return;
+    var c = connectionsFor(id);
+    var html = '<button class="al-btn al-close" id="al-close" aria-label="Close">x</button>';
+    html += '<h2></h2><div class="al-type"></div>';
+    detail.innerHTML = html;
+    detail.querySelector("h2").textContent = n.label;
+    detail.querySelector(".al-type").textContent = n.type;
+    if (n.tech) { var t = document.createElement("div"); t.className="al-tech"; t.textContent = n.tech; detail.appendChild(t); }
+    if (n.description) { var p = document.createElement("p"); p.textContent = n.description; detail.appendChild(p); }
+    if (c.outs.length || c.ins.length) {
+      var ul = document.createElement("ul");
+      c.outs.forEach(function(x){ var li=document.createElement("li"); li.textContent = "to " + x; ul.appendChild(li); });
+      c.ins.forEach(function(x){ var li=document.createElement("li"); li.textContent = "from " + x; ul.appendChild(li); });
+      detail.appendChild(ul);
+    }
+    detail.classList.add("open");
+    document.getElementById("al-close").addEventListener("click", clearSel);
+  }
+  function clearSel() {
+    svg.querySelectorAll(".node").forEach(function(g){ g.classList.remove("selected"); });
+    detail.classList.remove("open");
+  }
+  svg.querySelectorAll(".node").forEach(function(g){
+    g.addEventListener("click", function(){ select(g.getAttribute("data-id")); });
+    g.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); select(g.getAttribute("data-id")); } });
+  });
+
+  // theme toggle
+  var tbtn = document.getElementById("al-theme");
+  tbtn.addEventListener("click", function(){
+    var cur = document.documentElement.getAttribute("data-theme");
+    var next = cur === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    tbtn.textContent = next === "dark" ? "Light" : "Dark";
+  });
+
+  window.addEventListener("resize", fit);
+  fit();
+})();
+</script>
+
+</body>
+</html>
