@@ -1,0 +1,52 @@
+{
+  "name": "archlens",
+  "version": "0.1.0",
+  "description": "Turn an AI coding agent's architecture description into a beautiful, interactive, taste-driven diagram. No API key of its own.",
+  "type": "module",
+  "license": "MIT",
+  "author": "MetriSomesh",
+  "homepage": "https://github.com/MetriSomesh/archlens",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MetriSomesh/archlens.git"
+  },
+  "keywords": [
+    "architecture",
+    "diagram",
+    "mcp",
+    "ai-agents",
+    "visualization",
+    "elk",
+    "svg"
+  ],
+  "bin": {
+    "archlens": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "skill",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc && node --test \"dist/**/*.test.js\"",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "commander": "^12.1.0",
+    "elkjs": "^0.9.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
