@@ -22,9 +22,54 @@ Under active construction. Built in phases:
 
 - [x] Phase 0 — spec schema + ELK layout + static render
 - [x] Phase 1 — interactive HTML renderer + taste
-- [ ] Phase 2 — MCP server + local server with live reload
+- [x] Phase 2 — MCP server + local server with live reload
 - [ ] Phase 3 — flow animation + exports (SVG / PNG / Mermaid)
 - [ ] Phase 4 — skill packaging + docs + CI
+
+## Usage
+
+### CLI
+
+```bash
+# One-shot: render a spec file to a self-contained .html
+archlens render architecture.json --name my-system
+
+# Live mode: serve with a clickable localhost URL, hot-reload on file change
+archlens serve architecture.json
+
+# Run as an MCP server over stdio (for AI coding agents)
+archlens mcp
+```
+
+`render` and `serve` write into `.archlens/` by default (override with `--out`).
+`serve` prints a `http://127.0.0.1:<port>/...` link and reloads the open tab
+whenever the spec file changes.
+
+### MCP (for AI coding agents)
+
+Archlens speaks the Model Context Protocol, so an agent in your CLI can drive it
+directly. Point your MCP client at the `archlens mcp` command:
+
+```json
+{
+  "mcpServers": {
+    "archlens": {
+      "command": "npx",
+      "args": ["-y", "archlens", "mcp"]
+    }
+  }
+}
+```
+
+It exposes three tools:
+
+- `render_architecture` — render/replace the diagram from a full spec.
+- `update_architecture` — patch the current diagram incrementally
+  (add/update/remove nodes, edges, groups, flows) with a live hot-reload.
+- `export_diagram` — save the current diagram as `html`, `svg`, or `json`.
+
+Every tool call returns a clickable localhost URL plus a plain-text outline of
+the diagram, so the agent always keeps full context of what it drew.
 
 ## License
 
