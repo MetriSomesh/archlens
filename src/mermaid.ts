@@ -8,17 +8,34 @@ import { sanitizeText } from "./lint.js";
  * emits the logical structure (nodes, typed shapes, groups as subgraphs, edges).
  */
 
-/** Mermaid ids must be simple tokens; map spec ids to safe ones deterministically. */
-function safeId(id: string, seen: Map<string, string>): string {
-  if (seen.has(id)) return seen.get(id)!;
-  let base = id.replace(/[^A-Za-z0-9_]/g, "_");
-  if (!/^[A-Za-z_]/.test(base)) base = "n_" + base;
-  let candidate = base;
-  let i = 1;
-  const used = new Set(seen.values());
-  while (used.has(candidate)) candidate = `${base}_${i++}`;
-  seen.set(id, candidate);
-  return candidate;
+/**
+ * Allocate unique, valid Mermaid ids. Node ids and group ids live in separate
+ * namespaces (so the same raw id used for a node and a group stays distinct),
+ * while a shared `used` set guarantees no two entities ever share a Mermaid id.
+ */
+class IdAllocator {
+  private readonly used = new Set<string>();
+  private readonly nodes = new Map<string, string>();
+  private readonly groups = new Map<string, string>();
+
+  node(id: string): string {
+    return this.alloc(id, this.nodes, "");
+  }
+  group(id: string): string {
+    return this.alloc(id, this.groups, "grp_");
+  }
+  private alloc(id: string, seen: Map<string, string>, prefix: string): string {
+    const existing = seen.get(id);
+    if (existing) return existing;
+    let base = (prefix + id).replace(/[^A-Za-z0-9_]/g, "_");
+    if (!/^[A-Za-z_]/.test(base)) base = "n_" + base;
+    let candidate = base;
+    let i = 1;
+    while (this.used.has(candidate)) candidate = `${base}_${i++}`;
+    this.used.add(candidate);
+    seen.set(id, candidate);
+    return candidate;
+  }
 }
 
 function label(text: string): string {
@@ -46,7 +63,7 @@ function shape(type: NodeType, text: string): string {
 }
 
 export function toMermaid(spec: NormalizedSpec): string {
-  const ids = new Map<string, string>();
+  const ids = new IdAllocator();
   const nodeById = new Map(spec.nodes.map((n) => [n.id, n]));
   const membership = resolveGroupMembership(spec);
 
@@ -56,7 +73,7 @@ export function toMermaid(spec: NormalizedSpec): string {
   const nodeDecl = (id: string): string => {
     const n = nodeById.get(id)!;
     const text = n.tech ? `${n.label} (${n.tech})` : n.label;
-    return `${safeId(id, ids)}${shape(n.type, text)}`;
+    return `${ids.node(id)}${shape(n.type, text)}`;
   };
 
   // Groups become subgraphs; only declare a node once (inside its group).
@@ -64,7 +81,7 @@ export function toMermaid(spec: NormalizedSpec): string {
   for (const g of spec.groups) {
     const members = spec.nodes.filter((n) => membership.get(n.id) === g.id);
     if (members.length === 0) continue;
-    lines.push(`  subgraph ${safeId("grp_" + g.id, ids)}["${label(g.label)}"]`);
+    lines.push(`  subgraph ${ids.group(g.id)}["${label(g.label)}"]`);
     for (const n of members) {
       lines.push(`    ${nodeDecl(n.id)}`);
       declared.add(n.id);
@@ -79,8 +96,10 @@ export function toMermaid(spec: NormalizedSpec): string {
   }
 
   for (const e of spec.edges) {
-    const from = safeId(e.from, ids);
-    const to = safeId(e.to, ids);
+    // Skip edges to/from unknown nodes so we never emit phantom nodes.
+    if (!nodeById.has(e.from) || !nodeById.has(e.to)) continue;
+    const from = ids.node(e.from);
+    const to = ids.node(e.to);
     const arrow = e.style === "dashed" ? "-.->" : "-->";
     const mid = e.label ? `|"${label(e.label)}"|` : "";
     lines.push(`  ${from} ${arrow}${mid} ${to}`);

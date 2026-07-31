@@ -156,3 +156,35 @@ test("validateSpec warns when a flow references an unknown node", () => {
   });
   assert.ok(warnings.some((w) => w === "flow 'Broken' references unknown node 'missing'"));
 });
+
+test("polylineMidpoint returns the geometric middle, not the middle vertex", async () => {
+  const { polylineMidpoint } = await import("./render.js");
+  // 2-point horizontal segment: middle is the center, not the endpoint.
+  assert.deepEqual(polylineMidpoint([{ x: 0, y: 0 }, { x: 10, y: 0 }]), { x: 5, y: 0 });
+  // L-shaped 3-point path of total length 20: midpoint at distance 10 = the corner.
+  assert.deepEqual(
+    polylineMidpoint([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }]),
+    { x: 10, y: 0 }
+  );
+  // degenerate inputs
+  assert.deepEqual(polylineMidpoint([]), { x: 0, y: 0 });
+  assert.deepEqual(polylineMidpoint([{ x: 3, y: 4 }]), { x: 3, y: 4 });
+});
+
+test("mermaid keeps node and group ids distinct even when they collide", () => {
+  const { spec } = validateSpec({
+    nodes: [
+      { id: "grp_backend", label: "Legacy Node" },
+      { id: "api", label: "API" },
+    ],
+    // group id "backend" -> synthetic "grp_backend", which collides with the node id above
+    groups: [{ id: "backend", label: "Backend", nodes: ["api"] }],
+    edges: [{ from: "grp_backend", to: "api" }],
+  });
+  const mmd = toMermaid(spec);
+  assert.match(mmd, /subgraph grp_backend\["Backend"\]/);
+  // the node with raw id "grp_backend" must get a different, de-duplicated id
+  assert.match(mmd, /grp_backend_1/);
+  // and the edge must connect the node id, not the subgraph id
+  assert.match(mmd, /grp_backend_1 --> api/);
+});

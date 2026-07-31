@@ -1,4 +1,4 @@
-import type { Layout } from "./layout.js";
+import type { Layout, Point } from "./layout.js";
 import type { NormalizedSpec, NodeType } from "./schema.js";
 import { iconSvg } from "./icons.js";
 import { themeCss, NODE_HUE, FONT_STACK } from "./theme.js";
@@ -11,6 +11,33 @@ function esc(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+/**
+ * The point halfway along a polyline by arc length. Using the geometric middle
+ * (not the middle vertex) keeps edge labels centered even for 2-point edges,
+ * where the middle vertex would otherwise be the endpoint.
+ */
+export function polylineMidpoint(points: Point[]): Point {
+  if (points.length === 0) return { x: 0, y: 0 };
+  if (points.length === 1) return points[0];
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    total += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+  }
+  let target = total / 2;
+  for (let i = 1; i < points.length; i++) {
+    const seg = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    if (seg >= target) {
+      const t = seg === 0 ? 0 : target / seg;
+      return {
+        x: points[i - 1].x + (points[i].x - points[i - 1].x) * t,
+        y: points[i - 1].y + (points[i].y - points[i - 1].y) * t,
+      };
+    }
+    target -= seg;
+  }
+  return points[points.length - 1];
 }
 
 /** Deep copy of the spec with all user-facing text sanitized (removes banned dashes). */
@@ -80,9 +107,9 @@ function renderDiagramSvg(layout: Layout, spec: NormalizedSpec): string {
       if (e.points.length < 2) return "";
       const pts = e.points.map((p) => `${p.x},${p.y}`).join(" ");
       const cls = e.style === "dashed" ? "edge edge-dashed" : "edge";
-      const mid = e.points[Math.floor(e.points.length / 2)];
+      const mid = polylineMidpoint(e.points);
       const label = e.label
-        ? `<text class="edge-label" x="${mid.x}" y="${mid.y - 5}" text-anchor="middle">${esc(e.label)}</text>`
+        ? `<text class="edge-label" x="${mid.x.toFixed(1)}" y="${(mid.y - 5).toFixed(1)}" text-anchor="middle">${esc(e.label)}</text>`
         : "";
       return `<g class="edge-g" data-edge="${i}" data-from="${esc(e.from)}" data-to="${esc(e.to)}"><polyline class="${cls}" points="${pts}" marker-end="url(#al-arrow)"/>${label}</g>`;
     })
