@@ -1,5 +1,5 @@
 {
-  "name": "@metrisomesh/archlens",
+  "name": "@someshmetri/archlens",
   "version": "0.1.0",
   "description": "Turn an AI coding agent's architecture description into a beautiful, interactive, taste-driven diagram. No API key of its own.",
   "type": "module",
